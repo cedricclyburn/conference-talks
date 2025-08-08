@@ -1,6 +1,7 @@
 import { createExternalPackageIconLoader } from '@iconify/utils/lib/loader/external-pkg'
 // @ts-expect-error - Ignoring the error of missing types for the uno config
 import config from '@slidev/client/uno.config'
+// @ts-expect-error - Types for unocss may be unavailable in this environment
 import { mergeConfigs, presetAttributify, presetIcons, presetWebFonts, presetWind3 } from 'unocss'
 
 export default mergeConfigs([
@@ -31,7 +32,14 @@ export default mergeConfigs([
       }),
       presetWebFonts({
         fonts: {
-          sans: 'DM Sans',
+          // Red Hat brand typography
+          // Body text
+          sans: 'Red Hat Text',
+          // Headings / display
+          display: 'Red Hat Display',
+          // Monospace (for code samples)
+          mono: 'Red Hat Mono',
+          // Keep existing extras
           cn: 'Noto Serif SC',
           hand: 'Playwrite IT Moderna',
         },

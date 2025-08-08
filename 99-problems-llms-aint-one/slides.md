@@ -80,7 +80,7 @@ glowSeed: 205
         </div>
         <ul class="mt-1 leading-6">
           <li>
-            <a href="https://www.youtube.com/watch?v=00Q0G84kq3M&t=82s" target="_blank" class="underline decoration-dotted">RAG vs Fine‑Tuning</a>
+            <a href="https://www.youtube.com/watch?v=00Q0G84kq3M&" target="_blank" class="underline decoration-dotted">RAG vs Fine‑Tuning</a>
           </li>
           <li>
             <a href="https://www.youtube.com/watch?v=5RIOQuHOihY" target="_blank" class="underline decoration-dotted">Ollama</a>
@@ -498,7 +498,7 @@ layout: center
   <div v-click bg="white/5" rounded-lg p-4>Private + sovereign AI gives control, privacy, and cost governance</div>
   <div v-click bg="white/5" rounded-lg p-4>Serve locally with llama.cpp (CPU/edge) or vLLM/TGI (GPU scale)</div>
   <div v-click bg="white/5" rounded-lg p-4>Quantization can halve GPU needs with minimal quality loss</div>
-  <div v-click class="rounded-lg p-4 text-center font-bold text-xl tracking-wide bg-gradient-to-r from-emerald-400/90 to-cyan-400/90 text-black shadow-lg">
+  <div v-click class="rounded-lg p-4 text-center font-bold text-xl tracking-wide bg-gradient-to-r from-[#1f1f1f]/90 to-[#3a3a3a]/90 text-white shadow-lg border border-[#ee0000]/30">
     You might still have 99 problems — LLMs ain’t one
   </div>
 </div>
