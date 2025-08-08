@@ -215,7 +215,7 @@ Own your stack from weights → runtime → platform.
           </div>
   <div bg="white/5" rounded-lg p-3>
     <div font-bold>Serving</div>
-    llama.cpp (CPU/GGUF), vLLM (GPU), TGI, Text Gen WebUI
+    llama.cpp (CPU/GGUF) & wrappers, vLLM (GPU), TGI
           </div>
   <div bg="white/5" rounded-lg p-3>
     <div font-bold>Governance</div>
