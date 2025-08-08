@@ -122,6 +122,19 @@ iframe {
   border: 1px solid #eee1;
 }
 
+/* Underline entrance animation */
+.underline-animate {
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #aaf7ff, #01b6d1);
+  transition: width 600ms ease;
+}
+
+.slidev-vclick-target:not(.slidev-vclick-hidden) + .underline-animate,
+.underline-animate.show {
+  width: 180px;
+}
+
 .rough-annotation > path[stroke-width='2'] {
   stroke-width: calc(2px * var(--slidev-slide-scale));
 }
