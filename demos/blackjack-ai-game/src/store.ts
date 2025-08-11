@@ -49,10 +49,19 @@ const notificationTool = createNotificationTool()
 // Initialize balance tracker and connect to notifications
 balanceTracker.reset(STARTING_BANK)
 balanceTracker.addListener((event: BalanceEvent) => {
-  if (!state.balanceNotificationsEnabled) return
+  console.log('[Store] Balance event received:', event)
+  console.log('[Store] Notifications enabled:', state.balanceNotificationsEnabled)
+  
+  if (!state.balanceNotificationsEnabled) {
+    console.log('[Store] Balance notifications disabled, skipping')
+    return
+  }
   
   const currentSession = sessionService.getCurrentSession()
   const shouldNotify = balanceTracker.shouldNotifyForEvent(event)
+  
+  console.log('[Store] Current session:', currentSession)
+  console.log('[Store] Should notify:', shouldNotify)
   
   if (shouldNotify && currentSession) {
     const context = balanceTracker.createBalanceNotificationContext({
@@ -181,6 +190,11 @@ async function placeBet(player: Player, hand: Hand, amount: number) {
   
   // Track balance change for notifications
   if (!player.isDealer) {
+    console.log('[Store] Placing bet - updating balance tracker:', {
+      newBalance: player.bank,
+      action: 'loss',
+      amount: amount
+    })
     balanceTracker.updateBalance(player.bank, 'loss', amount)
   }
   

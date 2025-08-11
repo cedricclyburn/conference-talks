@@ -26,7 +26,7 @@ class NotificationTool {
   private config: NotificationConfig
   private recentMessages: QuirkyMessage[] = []
   private lastNotificationTime = 0
-  private static readonly RATE_LIMIT_MS = 30000 // 30 seconds between notifications
+  private static readonly RATE_LIMIT_MS = 0 // No rate limiting for demo
 
   constructor(config: NotificationConfig) {
     this.config = config
@@ -113,6 +113,9 @@ class NotificationTool {
    * Send notification via ntfy
    */
   async sendNotification(context: BalanceNotificationContext): Promise<boolean> {
+    console.log('[Notification Tool] sendNotification called with context:', context)
+    console.log('[Notification Tool] Current config:', this.config)
+    
     if (!this.config.enabled) {
       console.log('[Notification Tool] Notifications disabled')
       return false
