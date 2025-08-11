@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: run-config
+data:
+  config.yaml: |
+    version: '2'
+    image_name: remote-vllm
+    apis:
+    - agents
+    - datasetio
+    - eval
+    - inference
+    - safety
+    - scoring
+    - telemetry
+    - tool_runtime
+    - vector_io
+    providers:
+      inference:
+      - provider_id: ramalama
+        provider_type: remote::vllm
+        config:
+          url: ${env.RAMALAMA_URL}
+          max_tokens: 128000
+          api_token: ${env.RAMALAMA_API_TOKEN}
+          tls_verify: false
+      - provider_id: vllm-remote
+        provider_type: remote::vllm
+        config:
+          url: ${env.VLLM_URL}
+          max_tokens: 128000
+          api_token: ${env.VLLM_API_TOKEN}
+          tls_verify: false
+      - provider_id: sentence-transformers
+        provider_type: inline::sentence-transformers
+        config: {}
+      agents:
+      - provider_id: meta-reference
+        provider_type: inline::meta-reference
+        config:
+          persistence_store:
+            type: sqlite
+            namespace: null
+            db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/agents_store.db
+      eval:
+      - provider_id: meta-reference
+        provider_type: inline::meta-reference
+        config:
+          kvstore:
+            type: sqlite
+            namespace: null
+            db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/meta_reference_eval.db
+      datasetio:
+      - provider_id: localfs
+        provider_type: inline::localfs
+        config:
+          kvstore:
+            type: sqlite
+            namespace: null
+            db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/localfs_datasetio.db
+      scoring:
+      - provider_id: basic
+        provider_type: inline::basic
+        config: {}
+      - provider_id: llm-as-judge
+        provider_type: inline::llm-as-judge
+        config: {}
+      telemetry:
+      - provider_id: meta-reference
+        provider_type: inline::meta-reference
+        config:
+          service_name: ${env.OTEL_SERVICE_NAME:llama-stack}
+          sinks: ${env.TELEMETRY_SINKS:console,sqlite}
+          sqlite_db_path: ${env.SQLITE_DB_PATH:~/.llama/distributions/remote-vllm/trace_store.db}
+      tool_runtime:
+      - provider_id: model-context-protocol
+        provider_type: remote::model-context-protocol
+        config: {}
+    metadata_store:
+      type: sqlite
+      db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/registry.db
+    models:
+    - metadata: {}
+      model_id: ${env.RAMALAMA_MODEL}
+      provider_id: ramalama
+      model_type: llm
+    - metadata:
+        embedding_dimension: 384
+      model_id: all-MiniLM-L6-v2
+      provider_id: sentence-transformers
+      model_type: embedding
+    tool_groups:
+    - toolgroup_id: mcp::ntfy
+      provider_id: model-context-protocol
+      mcp_endpoint:
+        uri: "http://ntfy-mcp-service:8000/sse"

@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntfy-mcp
+  labels:
+    app: ntfy-mcp
+    component: mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ntfy-mcp
+  template:
+    metadata:
+      labels:
+        app: ntfy-mcp
+    spec:
+      containers:
+      - name: ntfy-mcp
+        image: registry.redhat.io/ubi8/nodejs-18:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        env:
+        - name: NPM_CONFIG_CACHE
+          value: /tmp/.npm
+        - name: NTFY_SERVER_URL
+          value: "https://ntfy.sh"
+        - name: NTFY_TOPIC
+          value: "blackjack-ai-balance-notifications"
+        workingDir: /tmp
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          # Create package.json
+          cat > package.json << 'EOF'
+          {
+            "name": "ntfy-mcp-server",
+            "version": "1.0.0",
+            "type": "module",
+            "dependencies": {
+              "@modelcontextprotocol/sdk": "^0.2.0",
+              "axios": "^1.6.0"
+            }
+          }
+          EOF
+          
+          # Create app directory and MCP server
+          mkdir -p app
+          cat > app/index.js << 'EOF'
+          import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+          import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+          import axios from 'axios';
+          
+          // Create server instance
+          const server = new McpServer({
+            name: 'ntfy-mcp-server',
+            version: '1.0.0',
+          });
+          
+          const ntfyServer = process.env.NTFY_SERVER_URL || 'https://ntfy.sh';
+          const ntfyTopic = process.env.NTFY_TOPIC || 'blackjack-ai-balance-notifications';
+          
+          server.tool('send_balance_notification', 'Send push notifications about balance changes via ntfy', {
+            message: { type: 'string', description: 'Notification message content' },
+            balance: { type: 'number', description: 'Current balance' },
+            context: { type: 'string', description: 'Game context' }
+          }, async ({ message, balance = 0, context = '' }) => {
+            try {
+              if (!message) {
+                throw new Error('Missing message field');
+              }
+              
+              const notificationData = {
+                message: message,
+                title: `🎰 Blackjack Balance Update: $${balance}`,
+                priority: 3,
+                tags: ['game', 'casino', 'balance']
+              };
+              
+              console.log(`[Ntfy MCP] Sending notification: ${message}`);
+              
+              const response = await axios.post(
+                `${ntfyServer}/${ntfyTopic}`,
+                notificationData,
+                { timeout: 10000 }
+              );
+              
+              if (response.status === 200) {
+                return {
+                  content: [
+                    {
+                      type: 'text',
+                      text: `Successfully sent notification: ${message}`,
+                    },
+                  ],
+                };
+              } else {
+                throw new Error(`Ntfy server returned ${response.status}`);
+              }
+            } catch (error) {
+              console.error(`[Ntfy MCP] Notification send failed:`, error);
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: `Failed to send notification: ${error.message}`,
+                  },
+                ],
+                isError: true,
+              };
+            }
+          });
+          
+          async function main() {
+            const transport = new StdioServerTransport();
+            await server.connect(transport);
+            console.error('Ntfy MCP server running on stdio');
+          }
+          
+          main().catch((error) => {
+            console.error('Fatal error in main():', error);
+            process.exit(1);
+          });
+          EOF
+          
+          # Install dependencies and run
+          npm install
+          npx -y supergateway --stdio "node app/index.js" --port 8000
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

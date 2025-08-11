@@ -5,6 +5,8 @@ import { Sounds, playSound } from './sound'
 import { Hand } from './types'
 import type { ModelConfig } from '@/services/aiService'
 import { sessionService } from '@/services/sessionService'
+import { balanceTracker, type BalanceEvent } from '@/services/balanceTracker'
+import type { QuirkyMessage } from '@/services/notificationTool'
 
 const MINIMUM_BET = 1
 const STARTING_BANK = 20
@@ -34,6 +36,10 @@ export const state = reactive<GameState>({
   aiPerformanceMetrics: [],
   currentAiModel: null,
   showPerformanceOverlay: false,
+  // Balance notification state
+  balanceNotificationsEnabled: localStorage.getItem('balanceNotificationsEnabled') === 'true',
+  recentBalanceMessages: [] as QuirkyMessage[],
+  isSendingBalanceNotification: false,
 })
 
 // Computed Properties

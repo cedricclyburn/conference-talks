@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackjack-frontend
+  namespace: blackjack-ai-demo
+  labels:
+    app: blackjack-frontend
+    app.kubernetes.io/component: blackjack-frontend
+    app.kubernetes.io/instance: blackjack-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: blackjack-frontend
+  template:
+    metadata:
+      labels:
+        deployment: blackjack-frontend
+    spec:
+      containers:
+      - name: blackjack-frontend
+        image: image-registry.openshift-image-registry.svc:5000/blackjack-ai-demo/blackjack-frontend:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        env:
+        - name: VITE_USE_LOCAL_AI
+          value: "true"  # Change to "false" to use remote vLLM
+        - name: VITE_LOCAL_AI_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              key: VITE_LOCAL_AI_ENDPOINT
+              name: blackjack-config
+        - name: VITE_MAX_CONCURRENT_SESSIONS
+          valueFrom:
+            configMapKeyRef:
+              key: VITE_MAX_CONCURRENT_SESSIONS
+              name: blackjack-config
+        - name: VITE_REMOTE_AI_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              key: VITE_REMOTE_AI_ENDPOINT
+              name: blackjack-config
+        - name: VITE_SESSION_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              key: VITE_SESSION_TIMEOUT
+              name: blackjack-config
+        - name: VITE_SHOW_PERFORMANCE_MONITOR
+          valueFrom:
+            configMapKeyRef:
+              key: VITE_SHOW_PERFORMANCE_MONITOR
+              name: blackjack-config
+        - name: MAAS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: MAAS_API_KEY
+              name: blackjack-secrets
+        - name: MAAS_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              key: MAAS_ENDPOINT
+              name: blackjack-secrets
+        - name: MAAS_MODEL
+          valueFrom:
+            secretKeyRef:
+              key: MAAS_MODEL
+              name: blackjack-secrets
+        - name: VITE_REMOTE_AI_KEY
+          valueFrom:
+            secretKeyRef:
+              key: VITE_REMOTE_AI_KEY
+              name: blackjack-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackjack-frontend
+  namespace: blackjack-ai-demo
+  labels:
+    app: blackjack-frontend
+    app.kubernetes.io/component: blackjack-frontend
+    app.kubernetes.io/instance: blackjack-frontend
+spec:
+  selector:
+    deployment: blackjack-frontend
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: blackjack-frontend
+  namespace: blackjack-ai-demo
+  labels:
+    app: blackjack-frontend
+    app.kubernetes.io/component: blackjack-frontend
+    app.kubernetes.io/instance: blackjack-frontend
+spec:
+  to:
+    kind: Service
+    name: blackjack-frontend
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+  wildcardPolicy: None

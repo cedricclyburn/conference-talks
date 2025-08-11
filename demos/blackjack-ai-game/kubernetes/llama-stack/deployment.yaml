@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llamastack-deployment
+  labels:
+    app: llamastack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llamastack
+  template:
+    metadata:
+      labels:
+        app: llamastack
+    spec:
+      volumes:
+      - name: run-config-volume
+        configMap:
+          name: run-config
+          defaultMode: 420
+      - name: llama-persist
+        persistentVolumeClaim:
+          claimName: llama-persist
+      - name: cache
+        emptyDir: {}
+      containers:
+      - name: llamastack
+        image: quay.io/redhat-et/llama:vllm-0.2.2
+        ports:
+        - containerPort: 8321
+          protocol: TCP
+        env:
+        - name: MAX_TOKENS
+          value: "128000"
+        - name: VLLM_MAX_TOKENS
+          value: "128000"
+        - name: RAMALAMA_MODEL
+          value: llama3.2:1b
+        - name: RAMALAMA_URL
+          value: "http://ramalama-service:8080"
+        - name: VLLM_URL
+          valueFrom:
+            configMapKeyRef:
+              name: blackjack-config
+              key: VITE_REMOTE_AI_ENDPOINT
+        - name: RAMALAMA_API_TOKEN
+          value: fake
+        - name: VLLM_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: blackjack-secrets
+              key: VITE_REMOTE_AI_KEY
+        - name: LLAMA_STACK_LOG
+          value: debug
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: run-config-volume
+          mountPath: /app-config
+        - name: llama-persist
+          mountPath: /.llama
+        - name: cache
+          mountPath: /.cache
+        args:
+        - --config
+        - /app-config/config.yaml
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

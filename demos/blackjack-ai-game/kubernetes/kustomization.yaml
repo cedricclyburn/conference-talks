@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: blackjack-ai-demo
+
+resources:
+  - base/configmap.yaml
+  - llama-stack
+  - mcp-servers/ntfy
+  - ui
+
+# Generate a secret for AI credentials
+secretGenerator:
+- name: ai-secrets
+  literals:
+  - VITE_REMOTE_AI_KEY=your-maas-api-key-here
