@@ -24,7 +24,7 @@ class BalanceTracker {
   private listeners: BalanceEventListener[] = []
   private eventHistory: BalanceEvent[] = []
   private readonly SIGNIFICANT_CHANGE_THRESHOLD = 5
-  private readonly NOTIFICATION_COOLDOWN = 30000 // 30 seconds
+  private readonly NOTIFICATION_COOLDOWN = 0 // No cooldown for demo
 
   constructor() {
     this.reset(20) // Default starting balance
@@ -94,29 +94,41 @@ class BalanceTracker {
   shouldNotifyForEvent(event: BalanceEvent): boolean {
     const now = Date.now()
     
+    console.log('[BalanceTracker] shouldNotifyForEvent called with:', {
+      event,
+      cooldownRemaining: Math.max(0, this.NOTIFICATION_COOLDOWN - (now - this.lastNotificationTime)),
+      changeAmount: Math.abs(event.change),
+      significantThreshold: this.SIGNIFICANT_CHANGE_THRESHOLD
+    })
+    
     // Check cooldown
     if (now - this.lastNotificationTime < this.NOTIFICATION_COOLDOWN) {
+      console.log('[BalanceTracker] Notification blocked by cooldown')
       return false
     }
 
     // Always notify for special events
     if (event.action === 'blackjack' || event.action === 'bust') {
+      console.log('[BalanceTracker] Special event notification approved:', event.action)
       this.lastNotificationTime = now
       return true
     }
 
-    // Notify for significant changes
-    if (Math.abs(event.change) >= this.SIGNIFICANT_CHANGE_THRESHOLD) {
+    // Notify for ANY balance change in demo mode
+    if (event.change !== 0) {
+      console.log('[BalanceTracker] Balance change notification approved:', event.change)
       this.lastNotificationTime = now
       return true
     }
 
     // Notify for low balance warnings
     if (event.newBalance <= 5 && event.oldBalance > 5) {
+      console.log('[BalanceTracker] Low balance warning notification approved')
       this.lastNotificationTime = now
       return true
     }
 
+    console.log('[BalanceTracker] No notification criteria met')
     return false
   }
 
