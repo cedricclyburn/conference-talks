@@ -6,8 +6,8 @@ resources:
 - configmap.yaml
 - secret.yaml
 - ramalama-deployment.yaml
+- ramalama-route.yaml
 - frontend-deployment.yaml
-- redis-deployment.yaml
 
 # Image configurations
 images:

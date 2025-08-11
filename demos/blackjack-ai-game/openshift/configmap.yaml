@@ -9,8 +9,8 @@ data:
   VITE_SESSION_TIMEOUT: "3600000"
   VITE_MAX_CONCURRENT_SESSIONS: "100"
   
-  # Local AI endpoint (will be set to internal service)
-  VITE_LOCAL_AI_ENDPOINT: "http://ramalama-service:8080"
+  # Local AI endpoint (external route for cluster access)
+  VITE_LOCAL_AI_ENDPOINT: "https://ramalama-route-blackjack-ai-demo.apps.prod.rhoai.rh-aiservices-bu.com"
   
   # Remote AI endpoint configuration
   VITE_REMOTE_AI_ENDPOINT: "https://llama-3-2-3b-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443"

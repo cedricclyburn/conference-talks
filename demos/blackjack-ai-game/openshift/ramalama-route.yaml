@@ -1,0 +1,17 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: ramalama-route
+  namespace: blackjack-ai-demo
+  labels:
+    app: ramalama
+spec:
+  to:
+    kind: Service
+    name: ramalama-service
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+  wildcardPolicy: None
