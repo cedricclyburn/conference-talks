@@ -13,6 +13,19 @@
   </head>
   <body>
     <div id="app"></div>
+    <script>
+      // Runtime environment variables injected by docker-entrypoint.sh
+      window.__ENV__ = {
+        VITE_LOCAL_AI_ENDPOINT: '${VITE_LOCAL_AI_ENDPOINT}',
+        VITE_REMOTE_AI_ENDPOINT: '${VITE_REMOTE_AI_ENDPOINT}',
+        VITE_REMOTE_AI_KEY: '${VITE_REMOTE_AI_KEY}',
+        VITE_USE_LOCAL_AI: '${VITE_USE_LOCAL_AI}',
+        VITE_SHOW_PERFORMANCE_MONITOR: '${VITE_SHOW_PERFORMANCE_MONITOR}',
+        VITE_ENABLE_BALANCE_NOTIFICATIONS: '${VITE_ENABLE_BALANCE_NOTIFICATIONS}',
+        VITE_NTFY_SERVER: '${VITE_NTFY_SERVER}',
+        VITE_NTFY_TOPIC: '${VITE_NTFY_TOPIC}'
+      };
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -90,8 +90,9 @@ data:
       model_id: all-MiniLM-L6-v2
       provider_id: sentence-transformers
       model_type: embedding
-    tool_groups:
-    - toolgroup_id: mcp::ntfy
-      provider_id: model-context-protocol
-      mcp_endpoint:
-        uri: "http://ntfy-mcp-service:8000/sse"
+    # MCP integration temporarily disabled - using direct HTTP notifications
+    # tool_groups:
+    # - toolgroup_id: mcp::ntfy
+    #   provider_id: model-context-protocol
+    #   mcp_endpoint:
+    #     uri: "http://ntfy-mcp-service:8000/sse"

@@ -7,6 +7,7 @@ import type { ModelConfig } from '@/services/aiService'
 import { sessionService } from '@/services/sessionService'
 import { balanceTracker, type BalanceEvent } from '@/services/balanceTracker'
 import type { QuirkyMessage } from '@/services/notificationTool'
+import { createNotificationTool, type BalanceNotificationContext } from '@/services/notificationTool'
 
 const MINIMUM_BET = 1
 const STARTING_BANK = 20
@@ -36,10 +37,40 @@ export const state = reactive<GameState>({
   aiPerformanceMetrics: [],
   currentAiModel: null,
   showPerformanceOverlay: false,
-  // Balance notification state
-  balanceNotificationsEnabled: localStorage.getItem('balanceNotificationsEnabled') === 'true',
+  // Balance notification state  
+  balanceNotificationsEnabled: localStorage.getItem('balanceNotificationsEnabled') !== 'false', // Default to true
   recentBalanceMessages: [] as QuirkyMessage[],
   isSendingBalanceNotification: false,
+})
+
+// Initialize notification tool
+const notificationTool = createNotificationTool()
+
+// Initialize balance tracker and connect to notifications
+balanceTracker.reset(STARTING_BANK)
+balanceTracker.addListener((event: BalanceEvent) => {
+  if (!state.balanceNotificationsEnabled) return
+  
+  const sessionStats = sessionService.getSessionStats()
+  const shouldNotify = balanceTracker.shouldNotifyForEvent(event)
+  
+  if (shouldNotify) {
+    const context = balanceTracker.createBalanceNotificationContext({
+      gamesPlayed: sessionStats.gamesPlayed,
+      totalWinnings: sessionStats.totalWinnings,
+      totalBets: sessionStats.totalBetsPlaced
+    })
+    
+    // Send notification async without blocking game flow
+    notificationTool.sendNotification(context).then(success => {
+      if (success) {
+        console.log('[Store] Balance notification sent successfully')
+        state.recentBalanceMessages = notificationTool.getRecentMessages()
+      }
+    }).catch(error => {
+      console.error('[Store] Failed to send balance notification:', error)
+    })
+  }
 })
 
 // Computed Properties
@@ -140,12 +171,18 @@ async function dealRound() {
 async function placeBet(player: Player, hand: Hand, amount: number) {
   state.isDealing = true
   await nextTick()
+  const oldBank = player.bank
   player.bank -= amount
   hand.bet += amount
   playSound(Sounds.Bet)
   
   // Track betting in session
   sessionService.addBet(amount)
+  
+  // Track balance change for notifications
+  if (!player.isDealer) {
+    balanceTracker.updateBalance(player.bank, 'loss', amount)
+  }
   
   await sleep()
 }
@@ -179,7 +216,15 @@ async function checkForBlackjack(hand: Hand): Promise<boolean> {
     await sleep(500)
     playSound(Sounds.Blackjack)
     await sleep(1200)
+    const oldBet = hand.bet
     hand.bet *= 3
+    
+    // Track blackjack for balance notifications
+    if (!state.activePlayer?.isDealer) {
+      const winnings = hand.bet - oldBet
+      balanceTracker.updateBalance(state.players[0].bank + hand.bet, 'blackjack', winnings)
+    }
+    
     endHand()
     return true
   }
@@ -232,7 +277,11 @@ async function checkForBust(hand: Hand): Promise<boolean> {
     state.activeHand = null
     await sleep(300)
     hand.result = 'bust'
-    if (!state.activePlayer?.isDealer) playSound(Sounds.Bust)
+    if (!state.activePlayer?.isDealer) {
+      playSound(Sounds.Bust)
+      // Track bust for balance notifications
+      balanceTracker.updateBalance(state.players[0].bank, 'bust', 0)
+    }
     endHand()
     return true
   }
@@ -342,13 +391,36 @@ async function settleBets() {
 async function collectWinnings() {
   for (const player of state.players) {
     if (player.isDealer) continue
+    
+    const oldBank = player.bank
     const total = player.hands.reduce((acc: number, hand: Hand) => acc + hand.bet, 0)
     player.bank += total
+    
     if (total > 0) {
       playSound(Sounds.Bank)
       // Track winnings in session
       sessionService.addWinnings(total)
+      
+      // Determine action based on hand results
+      const handResults = player.hands.map(h => h.result).filter(Boolean)
+      let action: 'win' | 'loss' | 'blackjack' | 'bust' | 'push' = 'win'
+      
+      if (handResults.includes('blackjack')) {
+        action = 'blackjack'
+      } else if (handResults.includes('bust')) {
+        action = 'bust'  
+      } else if (handResults.every(r => r === 'push')) {
+        action = 'push'
+      } else if (handResults.includes('win')) {
+        action = 'win'
+      } else {
+        action = 'loss'
+      }
+      
+      // Track balance change for notifications
+      balanceTracker.updateBalance(player.bank, action, total - (oldBank === player.bank ? 0 : oldBank))
     }
+    
     for (const hand of player.hands) hand.bet = 0
   }
   await sleep(300)

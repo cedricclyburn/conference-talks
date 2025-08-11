@@ -223,11 +223,49 @@ class NotificationTool {
  * Create notification tool with environment configuration
  */
 export function createNotificationTool(): NotificationTool {
-  const config: NotificationConfig = {
-    ntfyTopic: import.meta.env.VITE_NTFY_TOPIC || 'blackjack-ai-balance-notifications',
-    ntfyServer: import.meta.env.VITE_NTFY_SERVER || 'https://ntfy.sh',
-    enabled: import.meta.env.VITE_ENABLE_BALANCE_NOTIFICATIONS === 'true'
+  // Helper function to get environment variable with runtime fallback
+  const getEnvVar = (key: string, defaultValue?: string) => {
+    // First try import.meta.env (build-time)
+    const buildTimeValue = import.meta.env[key]
+    if (buildTimeValue !== undefined) return buildTimeValue
+    
+    // Then try window.__ENV__ (runtime injection)
+    const runtimeValue = (window as any)?.__ENV__?.[key]
+    if (runtimeValue !== undefined && runtimeValue !== `\${${key}}`) return runtimeValue
+    
+    // Finally use default
+    return defaultValue
   }
+
+  const ntfyTopic = getEnvVar('VITE_NTFY_TOPIC', 'blackjack-ai-balance-notifications')
+  const ntfyServer = getEnvVar('VITE_NTFY_SERVER', 'https://ntfy.sh')
+  const enabledValue = getEnvVar('VITE_ENABLE_BALANCE_NOTIFICATIONS')
+  
+  const config: NotificationConfig = {
+    ntfyTopic,
+    ntfyServer,
+    enabled: enabledValue === 'true' || enabledValue === undefined // Default to true if undefined
+  }
+
+  // Debug logging
+  console.log('[Notification Tool] Configuration:', {
+    topic: config.ntfyTopic,
+    server: config.ntfyServer, 
+    enabled: config.enabled,
+    envVars: {
+      buildTime: {
+        VITE_NTFY_TOPIC: import.meta.env.VITE_NTFY_TOPIC,
+        VITE_NTFY_SERVER: import.meta.env.VITE_NTFY_SERVER,
+        VITE_ENABLE_BALANCE_NOTIFICATIONS: import.meta.env.VITE_ENABLE_BALANCE_NOTIFICATIONS
+      },
+      runtime: (window as any)?.__ENV__,
+      resolved: {
+        VITE_NTFY_TOPIC: ntfyTopic,
+        VITE_NTFY_SERVER: ntfyServer,
+        VITE_ENABLE_BALANCE_NOTIFICATIONS: enabledValue
+      }
+    }
+  })
 
   return new NotificationTool(config)
 }

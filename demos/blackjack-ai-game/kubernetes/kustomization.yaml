@@ -4,7 +4,6 @@ kind: Kustomization
 namespace: blackjack-ai-demo
 
 resources:
-  - base/configmap.yaml
   - llama-stack
   - mcp-servers/ntfy
   - ui

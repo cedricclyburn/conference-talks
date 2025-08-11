@@ -9,6 +9,11 @@ data:
   VITE_SESSION_TIMEOUT: "3600000"
   VITE_MAX_CONCURRENT_SESSIONS: "100"
   
+  # Balance notification configuration
+  VITE_ENABLE_BALANCE_NOTIFICATIONS: "true"
+  VITE_NTFY_SERVER: "https://ntfy.sh"
+  VITE_NTFY_TOPIC: "blackjack-ai-balance-notifications"
+  
   # Local AI endpoint (external route for cluster access)
   VITE_LOCAL_AI_ENDPOINT: "https://ramalama-route-blackjack-ai-demo.apps.prod.rhoai.rh-aiservices-bu.com"
   

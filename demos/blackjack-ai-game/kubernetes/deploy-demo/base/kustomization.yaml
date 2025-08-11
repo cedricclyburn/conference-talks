@@ -8,10 +8,8 @@ resources:
 
 namespace: blackjack-ai-demo
 
-commonLabels:
-  app.kubernetes.io/name: blackjack-ai-game
-  app.kubernetes.io/instance: demo
-  app.kubernetes.io/component: ai-gaming-demo
-
-patchesStrategicMerge:
-  - patches/production.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/name: blackjack-ai-game
+      app.kubernetes.io/instance: demo
+      app.kubernetes.io/component: ai-gaming-demo

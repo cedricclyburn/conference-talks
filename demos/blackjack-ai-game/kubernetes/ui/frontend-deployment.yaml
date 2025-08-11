@@ -16,6 +16,7 @@ spec:
     metadata:
       labels:
         deployment: blackjack-frontend
+        project: blackjack-ai-demo
     spec:
       containers:
       - name: blackjack-frontend
@@ -50,6 +51,21 @@ spec:
           valueFrom:
             configMapKeyRef:
               key: VITE_SHOW_PERFORMANCE_MONITOR
+              name: blackjack-config
+        - name: VITE_ENABLE_BALANCE_NOTIFICATIONS
+          valueFrom:
+            configMapKeyRef:
+              key: VITE_ENABLE_BALANCE_NOTIFICATIONS
+              name: blackjack-config
+        - name: VITE_NTFY_SERVER
+          valueFrom:
+            configMapKeyRef:
+              key: VITE_NTFY_SERVER
+              name: blackjack-config
+        - name: VITE_NTFY_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              key: VITE_NTFY_TOPIC
               name: blackjack-config
         - name: MAAS_API_KEY
           valueFrom:
