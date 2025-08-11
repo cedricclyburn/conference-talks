@@ -34,8 +34,8 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh && chown nginx:0 /docker-entrypoint.sh
 
-# Expose port 80
-EXPOSE 80
+# Expose port 8080 (non-privileged port for OpenShift)
+EXPOSE 8080
 
 # Switch to nginx user for OpenShift
 USER nginx
