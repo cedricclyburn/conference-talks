@@ -270,5 +270,4 @@ export function createNotificationTool(): NotificationTool {
   return new NotificationTool(config)
 }
 
-export type { NotificationTool, BalanceNotificationContext }
-export { NotificationTool }
+export type { BalanceNotificationContext }

@@ -51,14 +51,14 @@ balanceTracker.reset(STARTING_BANK)
 balanceTracker.addListener((event: BalanceEvent) => {
   if (!state.balanceNotificationsEnabled) return
   
-  const sessionStats = sessionService.getSessionStats()
+  const currentSession = sessionService.getCurrentSession()
   const shouldNotify = balanceTracker.shouldNotifyForEvent(event)
   
-  if (shouldNotify) {
+  if (shouldNotify && currentSession) {
     const context = balanceTracker.createBalanceNotificationContext({
-      gamesPlayed: sessionStats.gamesPlayed,
-      totalWinnings: sessionStats.totalWinnings,
-      totalBets: sessionStats.totalBetsPlaced
+      gamesPlayed: currentSession.gamesPlayed,
+      totalWinnings: currentSession.totalWon,
+      totalBets: currentSession.totalBet
     })
     
     // Send notification async without blocking game flow
