@@ -44,7 +44,7 @@ class AIService {
       return {
         name: 'Llama 3.2 1B (llama.cpp)',
         endpoint: import.meta.env.VITE_LOCAL_AI_ENDPOINT || 'http://localhost:8080',
-        model: 'llama-3.2-1b',
+        model: 'llama3.2:1b',
         type: 'local'
       }
     } else {
@@ -73,7 +73,7 @@ class AIService {
   async checkHealth(): Promise<{ healthy: boolean; responseTime: number; error?: string }> {
     const startTime = Date.now()
     const controller = new AbortController()
-    const healthTimeout = this.currentModel.type === 'local' ? 2000 : 5000 // 2s for local, 5s for remote
+    const healthTimeout = this.currentModel.type === 'local' ? 5000 : 5000 // 5s for both local and remote
     const timeoutId = setTimeout(() => controller.abort(), healthTimeout)
     
     try {
@@ -160,7 +160,7 @@ Do not include any other text outside the JSON.`
     
     // Create abort controller with different timeouts for local vs remote
     const controller = new AbortController()
-    const timeout = this.currentModel.type === 'local' ? 3000 : 10000 // 3s for local, 10s for remote
+    const timeout = this.currentModel.type === 'local' ? 8000 : 10000 // 8s for local, 10s for remote
     const timeoutId = setTimeout(() => controller.abort(), timeout)
     
     try {

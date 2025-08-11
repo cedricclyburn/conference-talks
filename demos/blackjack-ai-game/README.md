@@ -132,45 +132,213 @@ VITE_USE_LOCAL_AI=false docker-compose up
 
 ### Prerequisites
 
-- OpenShift cluster access
-- `oc` CLI tool installed
-- Container registry access
+- OpenShift cluster access with project creation permissions
+- `oc` CLI tool installed and logged in
+- Container registry access (or use internal registry)
+- API keys for remote vLLM endpoints (if using)
 
-### Deployment Steps
+### Quick Deploy to Current Project
 
-1. **Apply configurations**
-   ```bash
-   oc apply -k openshift/
-   ```
-
-2. **Build the application**
-   ```bash
-   oc start-build blackjack-ai-game
-   ```
-
-3. **Monitor deployment**
-   ```bash
-   oc get pods -n blackjack-ai-demo
-   oc logs -f deployment/blackjack-frontend
-   ```
-
-4. **Get the route URL**
-   ```bash
-   oc get route blackjack-frontend-route -n blackjack-ai-demo
-   ```
-
-### Manual Deployment
+The simplest deployment approach (recommended for demos):
 
 ```bash
-# Create namespace
-oc apply -f openshift/namespace.yaml
+# Deploy all components to your current project
+oc apply -f openshift/configmap.yaml
+oc apply -f openshift/secret.yaml  
+oc apply -f openshift/ramalama-deployment.yaml
+oc apply -f openshift/frontend-deployment.yaml
 
-# Deploy components
+# Create build and deployment
+oc new-build --strategy docker --binary --name blackjack-ai-game
+oc start-build blackjack-ai-game --from-dir . --follow
+
+# Create frontend service and route
+oc new-app --image-stream blackjack-ai-game --name blackjack-frontend
+oc expose service blackjack-frontend --hostname=blackjack-demo.your-cluster-domain.com
+
+# Get the application URL
+oc get route blackjack-frontend
+```
+
+### Detailed Deployment Guide
+
+#### 1. Environment Setup
+
+First, ensure you're in the correct OpenShift project:
+
+```bash
+# Check current project
+oc project
+
+# Or create/switch to specific project
+oc new-project blackjack-ai-demo
+oc project blackjack-ai-demo
+```
+
+#### 2. Configure Secrets and ConfigMaps
+
+```bash
+# Create API key secret for remote vLLM (update with your key)
+oc create secret generic ai-secrets \
+  --from-literal=VITE_REMOTE_AI_KEY="your-actual-api-key-here"
+
+# Apply configuration
+oc apply -f openshift/configmap.yaml
+```
+
+#### 3. Deploy Ramalama (Local AI Service)
+
+```bash
+# Deploy Ramalama container for local AI
+oc apply -f openshift/ramalama-deployment.yaml
+
+# Monitor Ramalama startup (can take 5-10 minutes for model download)
+oc logs -f deployment/ramalama-llama
+```
+
+#### 4. Build and Deploy Frontend
+
+```bash
+# Create build configuration
+oc new-build --strategy docker --binary --name blackjack-ai-game
+
+# Build from source
+oc start-build blackjack-ai-game --from-dir . --follow
+
+# Deploy the application
+oc new-app --image-stream blackjack-ai-game --name blackjack-frontend
+
+# Configure environment variables
+oc set env deployment/blackjack-frontend \
+  --from=configmap/ai-config \
+  --from=secret/ai-secrets
+
+# Create route with TLS
+oc create route edge blackjack-frontend \
+  --service=blackjack-frontend \
+  --port=8080
+
+# Get application URL
+oc get route blackjack-frontend -o jsonpath='{.spec.host}'
+```
+
+### Deployment Configurations
+
+#### Full Namespace Deployment
+
+For production or isolated environments:
+
+```bash
+# Deploy to dedicated namespace
+oc apply -k openshift/
+
+# Monitor all deployments
+oc get pods -n blackjack-ai-demo -w
+```
+
+#### Current Project Deployment (Recommended for Demos)
+
+```bash
+# Skip namespace creation, deploy to current project
 oc apply -f openshift/configmap.yaml
 oc apply -f openshift/secret.yaml
 oc apply -f openshift/ramalama-deployment.yaml
 oc apply -f openshift/frontend-deployment.yaml
-oc apply -f openshift/redis-deployment.yaml
+```
+
+### Troubleshooting Deployment Issues
+
+#### Common Problems and Solutions
+
+**1. Vite Base Path Issues**
+- Symptom: Blank page or 404 errors for assets
+- Solution: Ensure `base: '/'` in `vite.config.ts`
+
+**2. Container Permissions**
+- Symptom: Pod fails to start with permission errors
+- Solution: nginx runs as non-root user (uid 101) with proper group permissions
+
+**3. Environment Variable Injection**
+- Symptom: API endpoints not configured correctly
+- Solution: Check `docker-entrypoint.sh` handles runtime env substitution
+
+**4. Image Pull Issues**
+- Symptom: ImagePullBackOff errors
+- Solution: Use internal image stream after building
+
+#### Essential Commands for Debugging
+
+```bash
+# Check pod status and events
+oc get pods
+oc describe pod <pod-name>
+
+# View application logs
+oc logs deployment/blackjack-frontend
+oc logs deployment/ramalama-llama
+
+# Check services and routes
+oc get svc,route
+
+# Test connectivity
+oc rsh deployment/blackjack-frontend
+# Inside container: curl localhost:8080/health
+
+# Check environment variables
+oc set env deployment/blackjack-frontend --list
+```
+
+### Performance and Scaling
+
+#### Resource Requests and Limits
+
+```bash
+# Set resource constraints for Ramalama (memory-intensive)
+oc patch deployment ramalama-llama -p '{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [{
+          "name": "ramalama-llama",
+          "resources": {
+            "requests": {"memory": "2Gi", "cpu": "1000m"},
+            "limits": {"memory": "4Gi", "cpu": "2000m"}
+          }
+        }]
+      }
+    }
+  }
+}'
+
+# Scale frontend for high availability
+oc scale deployment blackjack-frontend --replicas=3
+```
+
+#### Health Checks
+
+```bash
+# Configure readiness and liveness probes
+oc patch deployment blackjack-frontend -p '{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [{
+          "name": "blackjack-frontend",
+          "readinessProbe": {
+            "httpGet": {"path": "/health", "port": 8080},
+            "initialDelaySeconds": 10,
+            "periodSeconds": 5
+          },
+          "livenessProbe": {
+            "httpGet": {"path": "/health", "port": 8080},
+            "initialDelaySeconds": 30,
+            "periodSeconds": 10
+          }
+        }]
+      }
+    }
+  }
+}'
 ```
 
 ### Switching Between Local and Remote AI
