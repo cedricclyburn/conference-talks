@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackjack-frontend
+  namespace: blackjack-ai-demo
+  labels:
+    app: blackjack-frontend
+    component: web-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: blackjack-frontend
+  template:
+    metadata:
+      labels:
+        app: blackjack-frontend
+        component: web-app
+    spec:
+      containers:
+      - name: blackjack-frontend
+        image: blackjack-ai-game:latest
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: VITE_USE_LOCAL_AI
+          value: "true"  # Change to "false" to use remote vLLM
+        envFrom:
+        - configMapRef:
+            name: blackjack-config
+        - secretRef:
+            name: blackjack-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackjack-frontend-service
+  namespace: blackjack-ai-demo
+  labels:
+    app: blackjack-frontend
+spec:
+  selector:
+    app: blackjack-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: blackjack-frontend-route
+  namespace: blackjack-ai-demo
+  labels:
+    app: blackjack-frontend
+spec:
+  to:
+    kind: Service
+    name: blackjack-frontend-service
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
