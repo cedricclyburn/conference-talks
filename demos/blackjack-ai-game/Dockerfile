@@ -13,6 +13,19 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Set build-time environment variables with defaults
+ARG VITE_USE_LOCAL_AI=true
+ARG VITE_LOCAL_AI_ENDPOINT=http://ramalama-service:8080
+ARG VITE_REMOTE_AI_ENDPOINT=https://llama-3-2-3b-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443
+ARG VITE_REMOTE_AI_KEY=placeholder
+ARG VITE_SHOW_PERFORMANCE_MONITOR=true
+
+ENV VITE_USE_LOCAL_AI=$VITE_USE_LOCAL_AI
+ENV VITE_LOCAL_AI_ENDPOINT=$VITE_LOCAL_AI_ENDPOINT
+ENV VITE_REMOTE_AI_ENDPOINT=$VITE_REMOTE_AI_ENDPOINT
+ENV VITE_REMOTE_AI_KEY=$VITE_REMOTE_AI_KEY
+ENV VITE_SHOW_PERFORMANCE_MONITOR=$VITE_SHOW_PERFORMANCE_MONITOR
+
 # Build application
 RUN npm run build
 
