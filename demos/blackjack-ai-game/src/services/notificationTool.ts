@@ -42,46 +42,46 @@ class NotificationTool {
     // Fun message templates based on different scenarios
     const templates = {
       bigWin: [
-        `🎰 JACKPOT VIBES! Balance: $${currentBalance}. You're on fire! 🔥`,
-        `💰 Winner winner! Balance: $${currentBalance}. The chips are flowing like tears of joy! 💸`,
-        `🎉 BOOM! Balance: $${currentBalance}. Someone's buying dinner tonight! 🍾`,
-        `🚀 TO THE MOON! Balance: $${currentBalance}. Your wallet is doing the happy dance! 💃`
+        `🎰 JACKPOT VIBES! You're on fire! 🔥`,
+        `💰 Winner winner! The chips are flowing like tears of joy! 💸`,
+        `🎉 BOOM! Someone's buying dinner tonight! 🍾`,
+        `🚀 TO THE MOON! Your wallet is doing the happy dance! 💃`
       ],
       win: [
-        `✨ Nice! Balance: $${currentBalance}. Lady Luck is smiling! 😊`,
-        `🎯 Solid win! Balance: $${currentBalance}. You've got the magic touch! ✋`,
-        `💫 Sweet! Balance: $${currentBalance}. Keep that streak alive! 🔥`,
-        `🎪 Winner! Balance: $${currentBalance}. The house is slightly concerned! 😅`
+        `✨ Nice! Lady Luck is smiling! 😊`,
+        `🎯 Solid win! You've got the magic touch! ✋`,
+        `💫 Sweet! Keep that streak alive! 🔥`,
+        `🎪 Winner! The house is slightly concerned! 😅`
       ],
       loss: [
-        `😅 Ouch! Balance: $${currentBalance}. The cards are being moody today! 😒`,
-        `🎭 Plot twist! Balance: $${currentBalance}. Even Batman has bad days! 🦇`,
-        `🌪️ Whoops! Balance: $${currentBalance}. Time to channel your inner comeback kid! 💪`,
-        `🎢 Down we go! Balance: $${currentBalance}. What goes down must come up! ⬆️`
+        `😅 Ouch! The cards are being moody today! 😒`,
+        `🎭 Plot twist! Even Batman has bad days! 🦇`,
+        `🌪️ Whoops! Time to channel your inner comeback kid! 💪`,
+        `🎢 Down we go! What goes down must come up! ⬆️`
       ],
       bigLoss: [
-        `😱 YIKES! Balance: $${currentBalance}. The cards just declared war! ⚔️`,
-        `💥 OOOF! Balance: $${currentBalance}. Time to sacrifice a lucky penny! 🪙`,
-        `🌊 Tsunami alert! Balance: $${currentBalance}. Even the dealer winced! 😬`,
-        `🎲 Brutal! Balance: $${currentBalance}. The RNG gods are having a laugh! 😂`
+        `😱 YIKES! The cards just declared war! ⚔️`,
+        `💥 OOOF! Time to sacrifice a lucky penny! 🪙`,
+        `🌊 Tsunami alert! Even the dealer winced! 😬`,
+        `🎲 Brutal! The RNG gods are having a laugh! 😂`
       ],
       blackjack: [
-        `🃏 BLACKJACK! Balance: $${currentBalance}. You just schooled the dealer! 🎓`,
-        `⚡ 21! Balance: $${currentBalance}. Perfection in card form! 💯`,
-        `🏆 BLACKJACK BABY! Balance: $${currentBalance}. The cards bowed to your greatness! 👑`,
-        `🎯 BULLS-EYE! Balance: $${currentBalance}. 21 never felt so good! 😎`
+        `🃏 BLACKJACK! You just schooled the dealer! 🎓`,
+        `⚡ 21! Perfection in card form! 💯`,
+        `🏆 BLACKJACK BABY! The cards bowed to your greatness! 👑`,
+        `🎯 BULLS-EYE! 21 never felt so good! 😎`
       ],
       bust: [
-        `💥 BUST! Balance: $${currentBalance}. The cards got greedy! 😤`,
-        `🤯 Boom! Balance: $${currentBalance}. Sometimes 22 just isn't as fun as 21! 🎭`,
-        `🎪 BUST-ED! Balance: $${currentBalance}. The deck just played a prank! 🃏`,
-        `💣 Kaboom! Balance: $${currentBalance}. Next hand will be the revenge! 👊`
+        `💥 BUST! The cards got greedy! 😤`,
+        `🤯 Boom! Sometimes 22 just isn't as fun as 21! 🎭`,
+        `🎪 BUST-ED! The deck just played a prank! 🃏`,
+        `💣 Kaboom! Next hand will be the revenge! 👊`
       ],
       lowFunds: [
-        `⚠️ Running low! Balance: $${currentBalance}. Time to activate lucky mode! 🍀`,
-        `🚨 Alert! Balance: $${currentBalance}. Your wallet is feeling light! 💨`,
-        `📉 Getting thin! Balance: $${currentBalance}. Comeback story loading... ⏳`,
-        `🎯 Crunch time! Balance: $${currentBalance}. This is where legends are made! ⭐`
+        `⚠️ Running low! Time to activate lucky mode! 🍀`,
+        `🚨 Alert! Your wallet is feeling light! 💨`,
+        `📉 Getting thin! Comeback story loading... ⏳`,
+        `🎯 Crunch time! This is where legends are made! ⭐`
       ]
     }
 

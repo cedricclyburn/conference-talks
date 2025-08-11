@@ -141,29 +141,45 @@ function handleAskAi() {
 }
 
 /* Mobile responsive adjustments */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .player-toolbar {
-    gap: 0.75rem;
+    gap: 0.5rem;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    padding: 0.5rem;
+    z-index: 50;
   }
   
   [role='toolbar'] {
-    grid-template-columns: repeat(5, minmax(50px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 0.25rem;
-    max-width: 95vw;
+    width: 100%;
+    max-width: none;
+  }
+  
+  [role='toolbar'] button {
+    height: 50px;
+    font-size: 0.8rem;
+    line-height: 1.1;
   }
   
   .ai-advice-card {
-    max-width: 90vw;
-    padding: 0.75rem;
-  }
-  
-  .ai-advice-header {
-    font-size: 0.8rem;
+    max-width: 95vw;
+    padding: 0.5rem;
     margin-bottom: 0.5rem;
   }
   
-  .ai-reasoning {
+  .ai-advice-header {
     font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .ai-reasoning {
+    font-size: 0.7rem;
   }
   
   .ai-btn {
@@ -171,7 +187,26 @@ function handleAskAi() {
   }
   
   [role='toolbar'] button:first-of-type {
-    font-size: 1.5rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .player-toolbar {
+    padding: 0.25rem;
+  }
+  
+  [role='toolbar'] button {
+    height: 45px;
+    font-size: 0.7rem;
+  }
+  
+  .ai-btn {
+    font-size: 1rem !important;
+  }
+  
+  [role='toolbar'] button:first-of-type {
+    font-size: 0.6rem;
   }
 }
 </style>

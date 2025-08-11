@@ -171,46 +171,58 @@ button:active {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  header {
+    height: 40px;
+    padding: 0 0.5rem;
+  }
+  
   .branding {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     gap: 0.25rem;
   }
   
   .brand-link {
-    padding: 0.15rem 0.3rem;
+    padding: 0.1rem 0.25rem;
   }
   
   button {
-    height: 35px;
-    width: 35px;
+    height: 30px;
+    width: 30px;
   }
   
   .performance-btn {
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
 }
 
 @media (max-width: 480px) {
+  header {
+    height: 30px;
+    padding: 0 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
+  }
+  
   .branding {
-    flex-direction: column;
-    align-items: flex-start;
+    font-size: 0.7rem;
     gap: 0.15rem;
-    font-size: 0.85rem;
   }
   
   .created-by {
     display: none; /* Hide "Created by" on very small screens */
   }
   
-  header {
-    flex-direction: column;
-    height: auto;
-    padding: 0.5rem;
-    gap: 0.5rem;
+  .brand-link {
+    padding: 0.05rem 0.15rem;
   }
   
-  .header-buttons {
-    order: 2;
+  button {
+    height: 25px;
+    width: 25px;
+  }
+  
+  .performance-btn {
+    font-size: 0.9rem;
   }
 }
 </style>

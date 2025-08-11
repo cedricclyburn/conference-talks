@@ -104,12 +104,30 @@ section.player.dealer {
 
 @media (max-width: 768px) {
   .game-area {
-    gap: 4rem;
-    padding: 1rem 0.5rem;
+    gap: 2rem;
+    padding: 50px 0.5rem 120px 0.5rem; /* Account for header and bottom toolbar */
   }
   
   section.player {
-    gap: 4rem;
+    gap: 2rem;
+    min-height: 8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-area {
+    gap: 1rem;
+    padding: 40px 0.25rem 100px 0.25rem; /* Account for smaller header and bottom toolbar */
+    overflow-y: auto;
+  }
+  
+  section.player {
+    gap: 1rem;
+    min-height: 5rem;
+  }
+  
+  section.player.dealer {
+    margin-top: 0;
   }
 }
 </style>
