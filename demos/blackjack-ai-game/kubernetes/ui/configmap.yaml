@@ -5,6 +5,7 @@ metadata:
   namespace: blackjack-ai-demo
 data:
   # Environment configuration
+  VITE_USE_LOCAL_AI: "false"
   VITE_SHOW_PERFORMANCE_MONITOR: "true"
   VITE_SESSION_TIMEOUT: "3600000"
   VITE_MAX_CONCURRENT_SESSIONS: "100"
