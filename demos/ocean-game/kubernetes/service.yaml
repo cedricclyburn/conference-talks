@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ocean-game
+  labels:
+    app: ocean-game
+spec:
+  selector:
+    app: ocean-game
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+
+

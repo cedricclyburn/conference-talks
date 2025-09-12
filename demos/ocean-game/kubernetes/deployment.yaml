@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocean-game
+  labels:
+    app: ocean-game
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ocean-game
+  template:
+    metadata:
+      labels:
+        app: ocean-game
+    spec:
+      containers:
+        - name: web
+          image: your-registry/ocean-game:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+          volumeMounts:
+            - name: config
+              mountPath: /app/dist/config.js
+              subPath: config.js
+      volumes:
+        - name: config
+          configMap:
+            name: ocean-game-config
+            items:
+              - key: config.js
+                path: config.js
+
+
