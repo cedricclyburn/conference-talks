@@ -1,0 +1,370 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackjack-config
+  namespace: blackjack-demo
+data:
+  VITE_USE_LOCAL_AI: "false"
+  VITE_AI_PROVIDER: "mistral"
+  VITE_LLAMA_STACK_ENDPOINT: "http://llamastack-service:8321"
+  VITE_MISTRAL_AI_KEY: "62fd2860ea715b8dfed124b80dd31715"
+  VITE_SHOW_PERFORMANCE_MONITOR: "true"
+  VITE_SESSION_TIMEOUT: "3600000"
+  VITE_MAX_CONCURRENT_SESSIONS: "150"
+  VITE_ENABLE_BALANCE_NOTIFICATIONS: "true"
+  VITE_NTFY_SERVER: "https://ntfy.sh"
+  VITE_NTFY_TOPIC: "blackjack-ai-balance-notifications"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blackjack-secrets
+  namespace: blackjack-demo
+type: Opaque
+data:
+  MISTRAL_API_TOKEN: NjJmZDI4NjBlYTcxNWI4ZGZlZDEyNGI4MGRkMzE3MTU= # base64 encoded: 62fd2860ea715b8dfed124b80dd31715
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: run-config-mistral
+  namespace: blackjack-demo
+data:
+  config.yaml: |
+    version: '2'
+    image_name: blackjack-mistral
+    apis:
+    - agents
+    - datasetio
+    - eval
+    - inference
+    - safety
+    - scoring
+    - telemetry
+    - tool_runtime
+    - vector_io
+    providers:
+      inference:
+      - provider_id: mistral-remote
+        provider_type: remote::vllm
+        config:
+          url: ${env.MISTRAL_URL:=https://mistral-small-24b-w8a8-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1}
+          max_tokens: 4096
+          api_token: ${env.MISTRAL_API_TOKEN:=62fd2860ea715b8dfed124b80dd31715}
+          tls_verify: true
+      - provider_id: sentence-transformers
+        provider_type: inline::sentence-transformers
+        config: {}
+      agents:
+      - provider_id: meta-reference
+        provider_type: inline::meta-reference
+        config:
+          persistence_store:
+            type: sqlite
+            namespace: null
+            db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/blackjack-mistral}/agents_store.db
+      eval:
+      - provider_id: meta-reference
+        provider_type: inline::meta-reference
+        config:
+          kvstore:
+            type: sqlite
+            namespace: null
+            db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/blackjack-mistral}/meta_reference_eval.db
+      datasetio:
+      - provider_id: localfs
+        provider_type: inline::localfs
+        config:
+          kvstore:
+            type: sqlite
+            namespace: null
+            db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/blackjack-mistral}/localfs_datasetio.db
+      scoring:
+      - provider_id: basic
+        provider_type: inline::basic
+        config: {}
+      - provider_id: llm-as-judge
+        provider_type: inline::llm-as-judge
+        config: {}
+      telemetry:
+      - provider_id: meta-reference
+        provider_type: inline::meta-reference
+        config:
+          service_name: ${env.OTEL_SERVICE_NAME:llama-stack-blackjack}
+          sinks: ${env.TELEMETRY_SINKS:console,sqlite}
+          sqlite_db_path: ${env.SQLITE_DB_PATH:~/.llama/distributions/blackjack-mistral/trace_store.db}
+      tool_runtime:
+      - provider_id: model-context-protocol
+        provider_type: remote::model-context-protocol
+        config: {}
+    metadata_store:
+      type: sqlite
+      db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/blackjack-mistral}/registry.db
+    models:
+    - metadata: {}
+      model_id: mistral-small-24b-w8a8
+      provider_id: mistral-remote
+      model_type: llm
+    - metadata:
+        embedding_dimension: 384
+      model_id: all-MiniLM-L6-v2
+      provider_id: sentence-transformers
+      model_type: embedding
+    # MCP integration temporarily disabled for demo stability
+    # tool_groups:
+    # - toolgroup_id: mcp::ntfy
+    #   provider_id: model-context-protocol
+    #   mcp_endpoint:
+    #     uri: "http://ntfy-mcp-service:8000/sse"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llama-persist
+  namespace: blackjack-demo
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llamastack-deployment
+  namespace: blackjack-demo
+  labels:
+    app: llamastack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llamastack
+  template:
+    metadata:
+      labels:
+        app: llamastack
+    spec:
+      volumes:
+      - name: run-config-volume
+        configMap:
+          name: run-config-mistral
+          defaultMode: 420
+      - name: llama-persist
+        persistentVolumeClaim:
+          claimName: llama-persist
+      - name: cache
+        emptyDir: {}
+      containers:
+      - name: llamastack
+        image: quay.io/redhat-et/llama:vllm-0.2.2
+        ports:
+        - containerPort: 8321
+          protocol: TCP
+        env:
+        - name: MAX_TOKENS
+          value: "4096"
+        - name: MISTRAL_URL
+          value: "https://mistral-small-24b-w8a8-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"
+        - name: MISTRAL_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: blackjack-secrets
+              key: MISTRAL_API_TOKEN
+        - name: LLAMA_STACK_LOG
+          value: debug
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: run-config-volume
+          mountPath: /app-config
+        - name: llama-persist
+          mountPath: /.llama
+        - name: cache
+          mountPath: /.cache
+        args:
+        - --config
+        - /app-config/config.yaml
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llamastack-service
+  namespace: blackjack-demo
+  labels:
+    app: llamastack
+spec:
+  ports:
+  - port: 8321
+    protocol: TCP
+    targetPort: 8321
+  selector:
+    app: llamastack
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntfy-mcp-deployment
+  namespace: blackjack-demo
+  labels:
+    app: ntfy-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ntfy-mcp
+  template:
+    metadata:
+      labels:
+        app: ntfy-mcp
+    spec:
+      containers:
+      - name: ntfy-mcp
+        image: quay.io/redhat-et/mcp-server-ntfy:latest
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        env:
+        - name: NTFY_SERVER_URL
+          value: "https://ntfy.sh"
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ntfy-mcp-service
+  namespace: blackjack-demo
+  labels:
+    app: ntfy-mcp
+spec:
+  ports:
+  - port: 8000
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: ntfy-mcp
+  type: ClusterIP
+---
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: blackjack-ai-game
+  namespace: blackjack-demo
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'blackjack-ai-game:latest'
+  source:
+    git:
+      uri: 'https://github.com/cedric-clyburn/conference-talks'
+      contextDir: 'demos/blackjack-ai-game'
+    type: Git
+  strategy:
+    sourceStrategy:
+      env:
+      - name: NODE_ENV
+        value: production
+      forcePull: true
+      from:
+        kind: ImageStreamTag
+        name: 'nodejs:18-ubi8'
+        namespace: openshift
+    type: Source
+  triggers:
+  - type: ConfigChange
+  - type: ImageChange
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: blackjack-ai-game
+  namespace: blackjack-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: blackjack-demo
+  labels:
+    app: blackjack-ai-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blackjack-ai-frontend
+  template:
+    metadata:
+      labels:
+        app: blackjack-ai-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: image-registry.openshift-image-registry.svc:5000/blackjack-demo/blackjack-ai-game:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: blackjack-config
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      imagePullSecrets:
+      - name: default-dockercfg-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: blackjack-demo
+  labels:
+    app: blackjack-ai-frontend
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: blackjack-ai-frontend
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: blackjack-ui
+  namespace: blackjack-demo
+  labels:
+    app: blackjack-ai-frontend
+spec:
+  to:
+    kind: Service
+    name: frontend-service
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

@@ -8,6 +8,7 @@ resources:
 - ramalama-deployment.yaml
 - ramalama-route.yaml
 - frontend-deployment.yaml
+- route.yaml
 
 # Image configurations
 images:
@@ -24,4 +25,4 @@ patchesStrategicMerge:
 - patches/production.yaml
 
 # Namespace
-namespace: blackjack-ai-demo
+namespace: blackjack-demo

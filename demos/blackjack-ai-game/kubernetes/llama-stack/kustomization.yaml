@@ -9,3 +9,6 @@ resources:
   - service.yaml
   - deployment.yaml
   - configmap.yaml
+  - configmap-ollama.yaml
+  - configmap-mistral.yaml
+  - configmap-vllm.yaml

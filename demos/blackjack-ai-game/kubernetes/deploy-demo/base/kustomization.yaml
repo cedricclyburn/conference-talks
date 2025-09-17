@@ -6,7 +6,7 @@ resources:
   - ../../mcp-servers/ntfy
   - ../../ui
 
-namespace: blackjack-ai-demo
+namespace: blackjack-demo
 
 labels:
   - pairs:

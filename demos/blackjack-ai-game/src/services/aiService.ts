@@ -4,6 +4,7 @@ export interface ModelConfig {
   apiKey?: string
   model: string
   type: 'local' | 'remote'
+  provider?: 'ollama' | 'vllm' | 'mistral'
 }
 
 export interface BlackjackGameState {
@@ -39,21 +40,36 @@ class AIService {
 
   private getDefaultModel(): ModelConfig {
     const useLocal = import.meta.env.VITE_USE_LOCAL_AI === 'true'
+    const provider = import.meta.env.VITE_AI_PROVIDER || 'mistral'
     
     if (useLocal) {
       return {
-        name: 'Llama 3.2 1B (llama.cpp)',
-        endpoint: import.meta.env.VITE_LOCAL_AI_ENDPOINT || 'http://localhost:8080',
+        name: 'Llama 3.2 1B (Ollama)',
+        endpoint: import.meta.env.VITE_LLAMA_STACK_ENDPOINT || 'http://localhost:8321',
         model: 'llama3.2:1b',
-        type: 'local'
+        type: 'local',
+        provider: 'ollama'
       }
     } else {
-      return {
-        name: 'Llama 3.2 3B (vLLM)',
-        endpoint: import.meta.env.VITE_REMOTE_AI_ENDPOINT || 'https://llama-3-2-3b-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443',
-        apiKey: import.meta.env.VITE_REMOTE_AI_KEY,
-        model: 'llama-3-2-3b',
-        type: 'remote'
+      // Default to new Mistral model for remote inference
+      if (provider === 'mistral') {
+        return {
+          name: 'Blackjack Mistral 24B',
+          endpoint: import.meta.env.VITE_LLAMA_STACK_ENDPOINT || 'http://localhost:8321',
+          apiKey: import.meta.env.VITE_MISTRAL_AI_KEY || '62fd2860ea715b8dfed124b80dd31715',
+          model: 'mistral-small-24b-w8a8',
+          type: 'remote',
+          provider: 'mistral'
+        }
+      } else {
+        return {
+          name: 'Llama 3.2 3B (vLLM)',
+          endpoint: import.meta.env.VITE_LLAMA_STACK_ENDPOINT || 'http://localhost:8321',
+          apiKey: import.meta.env.VITE_REMOTE_AI_KEY,
+          model: 'llama-3-2-3b',
+          type: 'remote',
+          provider: 'vllm'
+        }
       }
     }
   }
@@ -73,37 +89,38 @@ class AIService {
   async checkHealth(): Promise<{ healthy: boolean; responseTime: number; error?: string }> {
     const startTime = Date.now()
     const controller = new AbortController()
-    const healthTimeout = this.currentModel.type === 'local' ? 5000 : 5000 // 5s for both local and remote
+    const healthTimeout = 8000 // 8s for Llama Stack health check
     const timeoutId = setTimeout(() => controller.abort(), healthTimeout)
     
     try {
-      let healthEndpoint: string
-      
-      if (this.currentModel.type === 'local') {
-        healthEndpoint = `${this.currentModel.endpoint}/health`
-      } else {
-        // For remote endpoints, we'll just try a simple models list request
-        const endpoint = this.currentModel.endpoint.endsWith('/v1') 
-          ? this.currentModel.endpoint 
-          : `${this.currentModel.endpoint}/v1`
-        healthEndpoint = `${endpoint}/models`
-      }
-      
-      const response = await fetch(healthEndpoint, {
+      // Use Llama Stack health endpoint
+      const response = await fetch(`${this.currentModel.endpoint}/health`, {
         method: 'GET',
-        headers: this.currentModel.type === 'remote' ? {
-          'Authorization': `Bearer ${this.currentModel.apiKey}`
-        } : {},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': this.currentModel.apiKey ? `Bearer ${this.currentModel.apiKey}` : ''
+        },
         signal: controller.signal
       })
       
       clearTimeout(timeoutId)
       const responseTime = Date.now() - startTime
       
+      if (response.ok) {
+        const healthData = await response.json()
+        // Check if the specific model we want is available
+        const isModelReady = healthData.status === 'ready' || healthData.healthy === true
+        return {
+          healthy: isModelReady,
+          responseTime,
+          error: isModelReady ? undefined : `Model ${this.currentModel.model} not ready`
+        }
+      }
+      
       return {
-        healthy: response.ok,
+        healthy: false,
         responseTime,
-        error: response.ok ? undefined : `HTTP ${response.status}: ${response.statusText}`
+        error: `HTTP ${response.status}: ${response.statusText}`
       }
     } catch (error) {
       clearTimeout(timeoutId)
@@ -160,71 +177,47 @@ Do not include any other text outside the JSON.`
     
     // Create abort controller with different timeouts for local vs remote
     const controller = new AbortController()
-    const timeout = this.currentModel.type === 'local' ? 8000 : 10000 // 8s for local, 10s for remote
+    const timeout = this.currentModel.type === 'local' ? 10000 : 15000 // 10s for local, 15s for remote (Mistral can be slower)
     const timeoutId = setTimeout(() => controller.abort(), timeout)
     
     try {
       let response: Response
       
-      if (this.currentModel.type === 'local') {
-        // Ramalama/local endpoint format - optimized for speed
-        response = await fetch(`${this.currentModel.endpoint}/v1/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: this.currentModel.model,
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a blackjack expert who follows basic strategy perfectly.'
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
-            max_tokens: 150, // Reduced for faster inference
+      // Use Llama Stack inference API
+      response = await fetch(`${this.currentModel.endpoint}/inference/chat-completion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': this.currentModel.apiKey ? `Bearer ${this.currentModel.apiKey}` : ''
+        },
+        body: JSON.stringify({
+          model_id: this.currentModel.model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a blackjack expert who follows basic strategy perfectly. Always respond with valid JSON in the requested format.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          sampling_params: {
+            strategy: 'greedy',
             temperature: 0.1,
-            top_p: 0.9, // Add top_p for better local model performance
-            stream: false // Explicitly disable streaming for faster response
-          }),
-          signal: controller.signal
-        })
-      } else {
-        // vLLM remote endpoint format
-        const endpoint = this.currentModel.endpoint.endsWith('/v1') 
-          ? this.currentModel.endpoint 
-          : `${this.currentModel.endpoint}/v1`
-          
-        response = await fetch(`${endpoint}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.currentModel.apiKey}`
+            top_p: 0.9,
+            max_tokens: this.currentModel.provider === 'mistral' ? 300 : 200,
+            repetition_penalty: 1.1
           },
-          body: JSON.stringify({
-            model: this.currentModel.model,
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a blackjack expert who follows basic strategy perfectly.'
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
-            max_tokens: 200,
-            temperature: 0.1
-          }),
-          signal: controller.signal
-        })
-      }
+          stream: false,
+          logprobs: null
+        }),
+        signal: controller.signal
+      })
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`)
       }
 
       const data = await response.json()
@@ -239,7 +232,18 @@ Do not include any other text outside the JSON.`
         success: true
       })
 
-      return { data, responseTime }
+      // Transform Llama Stack response to expected format
+      const transformedData = {
+        choices: [
+          {
+            message: {
+              content: data.completion_message?.content || data.content || ''
+            }
+          }
+        ]
+      }
+
+      return { data: transformedData, responseTime }
     } catch (error) {
       clearTimeout(timeoutId) // Clear timeout
       const responseTime = Date.now() - startTime
