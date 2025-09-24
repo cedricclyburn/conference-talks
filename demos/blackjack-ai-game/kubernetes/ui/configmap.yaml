@@ -11,9 +11,7 @@ data:
   VITE_MAX_CONCURRENT_SESSIONS: "100"
   
   # Balance notification configuration
-  VITE_ENABLE_BALANCE_NOTIFICATIONS: "true"
-  VITE_NTFY_SERVER: "https://ntfy.sh"
-  VITE_NTFY_TOPIC: "blackjack-ai-balance-notifications"
+  VITE_ENABLE_BALANCE_NOTIFICATIONS: "false"
   
   # Llama Stack endpoint  
   VITE_LLAMA_STACK_ENDPOINT: "http://llamastack-service:8321"

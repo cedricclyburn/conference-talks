@@ -39,38 +39,38 @@ class AIService {
   }
 
   private getDefaultModel(): ModelConfig {
-    const useLocal = import.meta.env.VITE_USE_LOCAL_AI === 'true'
-    const provider = import.meta.env.VITE_AI_PROVIDER || 'mistral'
-    
+    const useLocal = (import.meta.env.VITE_USE_LOCAL_AI ?? 'true') === 'true'
+    const endpoint = import.meta.env.VITE_LLAMA_STACK_ENDPOINT || `${window.location.origin}`
+    const provider = import.meta.env.VITE_AI_PROVIDER || 'ollama'
+
     if (useLocal) {
       return {
-        name: 'Llama 3.2 1B (Ollama)',
-        endpoint: import.meta.env.VITE_LLAMA_STACK_ENDPOINT || 'http://localhost:8321',
-        model: 'llama3.2:1b',
+        name: 'Llama 3.2 3B (Ollama)',
+        endpoint,
+        model: 'llama3.2:3b',
         type: 'local',
         provider: 'ollama'
       }
-    } else {
-      // Default to new Mistral model for remote inference
-      if (provider === 'mistral') {
-        return {
-          name: 'Blackjack Mistral 24B',
-          endpoint: import.meta.env.VITE_LLAMA_STACK_ENDPOINT || 'http://localhost:8321',
-          apiKey: import.meta.env.VITE_MISTRAL_AI_KEY || '62fd2860ea715b8dfed124b80dd31715',
-          model: 'mistral-small-24b-w8a8',
-          type: 'remote',
-          provider: 'mistral'
-        }
-      } else {
-        return {
-          name: 'Llama 3.2 3B (vLLM)',
-          endpoint: import.meta.env.VITE_LLAMA_STACK_ENDPOINT || 'http://localhost:8321',
-          apiKey: import.meta.env.VITE_REMOTE_AI_KEY,
-          model: 'llama-3-2-3b',
-          type: 'remote',
-          provider: 'vllm'
-        }
+    }
+
+    if (provider === 'mistral') {
+      return {
+        name: 'Blackjack Mistral 24B',
+        endpoint,
+        apiKey: import.meta.env.VITE_MISTRAL_AI_KEY,
+        model: 'mistral-small-24b-w8a8',
+        type: 'remote',
+        provider: 'mistral'
       }
+    }
+
+    return {
+      name: 'Llama 3.2 3B (Remote)',
+      endpoint,
+      apiKey: import.meta.env.VITE_REMOTE_AI_KEY,
+      model: 'llama-3-2-3b',
+      type: 'remote',
+      provider: 'vllm'
     }
   }
 

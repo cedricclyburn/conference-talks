@@ -1,111 +1,59 @@
-# Local Deployment Guide
+# Local Container Demo: Blackjack + Llama Stack + Ollama
 
-This guide walks you through deploying the Blackjack AI Game locally for development and testing.
+This walkthrough gets the entire demo running locally with containers so you can mirror the OpenShift experience on your laptop.
 
 ## Prerequisites
 
-- Node.js 18+ and npm
-- Docker or Podman
-- Access to AI models (local or remote)
+- Podman 4.6+ or Docker 24+
+- [Ollama](https://ollama.com/download) (running locally with GPU or CPU support)
+- Internet access to pull container images (Quay.io + docker.io)
 
-## Local Development Setup
+> **Tip:** Commands below use `podman`. Swap with `docker` if you prefer.
 
-### 1. Install Dependencies
-
-```bash
-npm install
-```
-
-### 2. Environment Configuration
-
-Create a `.env.local` file with your configuration:
+## 1. Start Ollama and preload the model
 
 ```bash
-# AI Model Configuration
-VITE_USE_LOCAL_AI=true
-VITE_LOCAL_AI_ENDPOINT=http://localhost:8080
-VITE_REMOTE_AI_ENDPOINT=https://your-remote-endpoint
-VITE_REMOTE_AI_KEY=your-api-key
-
-# Performance Monitoring
-VITE_SHOW_PERFORMANCE_MONITOR=true
-
-# MAAS Configuration (optional)
-MAAS_API_KEY=your-maas-key
-MAAS_ENDPOINT=https://your-maas-endpoint
-MAAS_MODEL=your-model-name
+ollama run llama3.2:3b --keepalive 60m
 ```
 
-### 3. Run Local AI Model (Optional)
-
-If using local AI, start a Llama model locally:
+## 2. Run Llama Stack
 
 ```bash
-# Using Ollama
-ollama run llama3.2:1b
-
-# Or using Ramalama
-ramalama serve --model llama3.2:1b --port 8080
+podman run --rm -it \
+  --name blackjack-llamastack \
+  -p 8321:8321 \
+  -v ~/.llama:/root/.llama \
+  llamastack/distribution-starter \
+  --port 8321 \
+  --env OLLAMA_URL=http://host.containers.internal:11434
 ```
 
-### 4. Start Development Server
+## 3. Run the blackjack UI
 
 ```bash
-npm run dev
+podman run --rm -it \
+  --name blackjack-game \
+  -p 8080:8080 \
+  quay.io/cclyburn/blackjack-ai-game:latest
 ```
 
-The application will be available at `http://localhost:5173`.
+Then open http://localhost:8080 to play.
 
-## Local Container Testing
-
-### Build Container
+## 4. Smoke test Llama Stack
 
 ```bash
-docker build -t blackjack-ai-game .
+curl -s http://localhost:8321/v1/inference/chat-completion \
+  -H 'Content-Type: application/json' \
+  -d '{"model_id":"ollama/llama3.2:3b","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
-### Run Container
+## 5. Tear down
 
 ```bash
-docker run -p 8080:8080 \
-  -e VITE_USE_LOCAL_AI=true \
-  -e VITE_LOCAL_AI_ENDPOINT=http://host.docker.internal:11434 \
-  blackjack-ai-game
+podman stop blackjack-game blackjack-llamastack
 ```
 
-## Performance Testing
-
-The local deployment includes performance monitoring tools:
-
-1. Enable performance overlay: Set `VITE_SHOW_PERFORMANCE_MONITOR=true`
-2. Monitor AI response times in the UI
-3. Compare local vs remote model performance
-
-## Troubleshooting
-
-### Common Issues
-
-1. **AI Model Not Responding**
-   - Verify your AI endpoint is accessible
-   - Check API keys are correctly configured
-   - Ensure model is properly loaded
-
-2. **Port Conflicts**
-   - Change development port: `npm run dev -- --port 3000`
-   - Verify no other services are using port 8080
-
-3. **Environment Variables Not Loading**
-   - Restart development server after changing `.env.local`
-   - Verify VITE_ prefix for client-side variables
-
-### Debug Mode
-
-Enable debug logging:
-
-```bash
-DEBUG=blackjack:* npm run dev
-```
-
-## Next Steps
-
-Once local development is working, deploy to OpenShift using the main deployment guide.
+Troubleshooting tips:
+- First call to Ollama can take 30–60 seconds while the model warms up.
+- Replace `host.containers.internal` with your machine IP if Podman/Docker can’t resolve it.
+- Try `ollama run llama3.2:3b --keepalive 60m` if the container says the model is unloaded.

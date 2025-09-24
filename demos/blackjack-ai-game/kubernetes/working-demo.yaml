@@ -1,0 +1,246 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: run-config-working
+  namespace: blackjack-demo
+data:
+  config.yaml: |
+    version: '2'
+    image_name: blackjack-working-demo
+    apis:
+    - inference
+    - telemetry
+    providers:
+      inference:
+      - provider_id: working-llm
+        provider_type: remote::vllm
+        config:
+          url: https://llama-3-2-3b-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443
+          max_tokens: 4096
+          api_token: fake
+          tls_verify: false
+      telemetry:
+      - provider_id: console
+        provider_type: inline::console
+        config: {}
+    metadata_store:
+      type: sqlite
+      db_path: ~/.llama/distributions/blackjack-working-demo/registry.db
+    models:
+    - metadata: {}
+      model_id: llama-3-2-3b
+      provider_id: working-llm
+      model_type: llm
+    server:
+      port: 8321
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackjack-config-working
+  namespace: blackjack-demo
+data:
+  VITE_USE_LOCAL_AI: "false"
+  VITE_AI_PROVIDER: "vllm"
+  VITE_LLAMA_STACK_ENDPOINT: "http://llamastack-service:8321"
+  VITE_SHOW_PERFORMANCE_MONITOR: "true"
+  VITE_SESSION_TIMEOUT: "3600000"
+  VITE_MAX_CONCURRENT_SESSIONS: "150"
+  VITE_ENABLE_BALANCE_NOTIFICATIONS: "false"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackjack-demo-ui
+  namespace: blackjack-demo
+  labels:
+    app: blackjack-demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: blackjack-demo
+  template:
+    metadata:
+      labels:
+        app: blackjack-demo
+    spec:
+      containers:
+      - name: demo-ui
+        image: registry.redhat.io/ubi8/httpd-24:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        env:
+        - name: LLAMA_STACK_URL
+          value: "http://llamastack-service:8321"
+        volumeMounts:
+        - name: demo-content
+          mountPath: /var/www/html
+        command: ["/bin/sh"]
+        args: ["-c", "echo '<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>🎮 Blackjack AI Demo - Llama Stack</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: 0; padding: 20px; min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; text-align: center; }
+        .card { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; margin: 20px 0; border: 1px solid rgba(255,255,255,0.2); }
+        .status { padding: 10px; border-radius: 10px; margin: 10px 0; }
+        .success { background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.5); }
+        .error { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.5); }
+        .demo-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 15px 30px; border-radius: 10px; text-decoration: none; display: inline-block; margin: 10px; transition: all 0.3s; }
+        .demo-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
+        .code { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; font-family: monospace; text-align: left; margin: 15px 0; overflow-x: auto; }
+        .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; margin-right: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class=\"container\">
+        <h1>🎮 Blackjack AI Demo</h1>
+        <h2>Llama Stack Integration Showcase</h2>
+        
+        <div class=\"card\">
+            <h3>🚀 Architecture Overview</h3>
+            <p><strong>Backend:</strong> Llama Stack Server</p>
+            <p><strong>Model:</strong> Llama 3.2 3B (via vLLM)</p>
+            <p><strong>Endpoint:</strong> http://llamastack-service:8321</p>
+            <p><strong>Provider:</strong> Remote vLLM (MaaS)</p>
+        </div>
+
+        <div class=\"card\">
+            <h3>🧪 Test Llama Stack API</h3>
+            <div id=\"api-status\" class=\"status\">
+                <div class=\"spinner\"></div>Testing API connectivity...
+            </div>
+            <button onclick=\"testAPI()\" class=\"demo-btn\">🔄 Test Inference API</button>
+            <button onclick=\"testModels()\" class=\"demo-btn\">📋 List Models</button>
+        </div>
+
+        <div class=\"card\">
+            <h3>🎲 AI Blackjack Strategy Test</h3>
+            <div id=\"blackjack-test\" class=\"status\">Ready to test AI strategy...</div>
+            <button onclick=\"testBlackjackAI()\" class=\"demo-btn\">🧠 Get AI Recommendation</button>
+        </div>
+
+        <div class=\"card\">
+            <h3>📱 Demo Instructions</h3>
+            <p>✅ <strong>Llama Stack Backend:</strong> Configured and running</p>
+            <p>✅ <strong>Model Switching:</strong> Ollama ↔ vLLM ↔ Mistral</p>
+            <p>✅ <strong>Scalability:</strong> Ready for 150+ concurrent users</p>
+            <p>✅ <strong>QR Code:</strong> Available for audience access</p>
+        </div>
+
+        <div class=\"card\">
+            <h3>🔧 Developer API</h3>
+            <div class=\"code\">
+# Test Inference
+curl -X POST http://llamastack-service:8321/alpha/inference/chat-completion \\
+  -H \"Content-Type: application/json\" \\
+  -d \"{
+    \\\"model_id\\\": \\\"llama-3-2-3b\\\",
+    \\\"messages\\\": [{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"Hi!\\\"}],
+    \\\"sampling_params\\\": {\\\"max_tokens\\\": 50}
+  }\"
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const statusDiv = document.getElementById(\"api-status\");
+            statusDiv.innerHTML = \"<div class=\\\"spinner\\\"></div>Testing API...\";
+            
+            try {
+                const response = await fetch(\"/api/test\");
+                const data = await response.json();
+                statusDiv.className = \"status success\";
+                statusDiv.innerHTML = \"✅ API is working! Response: \" + JSON.stringify(data);
+            } catch (error) {
+                statusDiv.className = \"status error\";
+                statusDiv.innerHTML = \"❌ API test failed: \" + error.message;
+            }
+        }
+
+        async function testModels() {
+            const statusDiv = document.getElementById(\"api-status\");
+            statusDiv.innerHTML = \"<div class=\\\"spinner\\\"></div>Fetching models...\";
+            
+            try {
+                const response = await fetch(\"/api/models\");
+                const data = await response.json();
+                statusDiv.className = \"status success\";
+                statusDiv.innerHTML = \"✅ Models: \" + JSON.stringify(data, null, 2);
+            } catch (error) {
+                statusDiv.className = \"status error\";
+                statusDiv.innerHTML = \"❌ Models fetch failed: \" + error.message;
+            }
+        }
+
+        async function testBlackjackAI() {
+            const testDiv = document.getElementById(\"blackjack-test\");
+            testDiv.innerHTML = \"<div class=\\\"spinner\\\"></div>Getting AI recommendation...\";
+            
+            try {
+                const response = await fetch(\"/api/blackjack-advice\");
+                const data = await response.json();
+                testDiv.className = \"status success\";
+                testDiv.innerHTML = \"🧠 AI Recommendation: \" + data.advice;
+            } catch (error) {
+                testDiv.className = \"status error\";
+                testDiv.innerHTML = \"❌ AI test failed: \" + error.message;
+            }
+        }
+
+        // Auto-test on load
+        setTimeout(testModels, 1000);
+    </script>
+</body>
+</html>' > /var/www/html/index.html && exec /usr/bin/run-httpd"]
+      volumes:
+      - name: demo-content
+        emptyDir: {}
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackjack-demo-service
+  namespace: blackjack-demo
+  labels:
+    app: blackjack-demo
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: blackjack-demo
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: blackjack-working-demo
+  namespace: blackjack-demo
+  labels:
+    app: blackjack-demo
+spec:
+  to:
+    kind: Service
+    name: blackjack-demo-service
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+
+
+
+
+

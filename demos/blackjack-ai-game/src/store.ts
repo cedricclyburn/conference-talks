@@ -6,8 +6,6 @@ import { Hand } from './types'
 import type { ModelConfig } from '@/services/aiService'
 import { sessionService } from '@/services/sessionService'
 import { balanceTracker, type BalanceEvent } from '@/services/balanceTracker'
-import type { QuirkyMessage } from '@/services/notificationTool'
-import { createNotificationTool, type BalanceNotificationContext } from '@/services/notificationTool'
 
 const MINIMUM_BET = 1
 const STARTING_BANK = 20
@@ -37,48 +35,16 @@ export const state = reactive<GameState>({
   aiPerformanceMetrics: [],
   currentAiModel: null,
   showPerformanceOverlay: false,
-  // Balance notification state  
-  balanceNotificationsEnabled: localStorage.getItem('balanceNotificationsEnabled') !== 'false', // Default to true
-  recentBalanceMessages: [] as QuirkyMessage[],
-  isSendingBalanceNotification: false,
+  // Balance tracking
+  balanceHistory: [] as BalanceEvent[],
 })
 
-// Initialize notification tool
-const notificationTool = createNotificationTool()
-
-// Initialize balance tracker and connect to notifications
+// Initialize balance tracker and wire up history
 balanceTracker.reset(STARTING_BANK)
 balanceTracker.addListener((event: BalanceEvent) => {
-  console.log('[Store] Balance event received:', event)
-  console.log('[Store] Notifications enabled:', state.balanceNotificationsEnabled)
-  
-  if (!state.balanceNotificationsEnabled) {
-    console.log('[Store] Balance notifications disabled, skipping')
-    return
-  }
-  
-  const currentSession = sessionService.getCurrentSession()
-  const shouldNotify = balanceTracker.shouldNotifyForEvent(event)
-  
-  console.log('[Store] Current session:', currentSession)
-  console.log('[Store] Should notify:', shouldNotify)
-  
-  if (shouldNotify && currentSession) {
-    const context = balanceTracker.createBalanceNotificationContext({
-      gamesPlayed: currentSession.gamesPlayed,
-      totalWinnings: currentSession.totalWon,
-      totalBets: currentSession.totalBet
-    })
-    
-    // Send notification async without blocking game flow
-    notificationTool.sendNotification(context).then(success => {
-      if (success) {
-        console.log('[Store] Balance notification sent successfully')
-        state.recentBalanceMessages = notificationTool.getRecentMessages()
-      }
-    }).catch(error => {
-      console.error('[Store] Failed to send balance notification:', error)
-    })
+  state.balanceHistory.push(event)
+  if (state.balanceHistory.length > 100) {
+    state.balanceHistory.shift()
   }
 })
 
@@ -188,13 +154,8 @@ async function placeBet(player: Player, hand: Hand, amount: number) {
   // Track betting in session
   sessionService.addBet(amount)
   
-  // Track balance change for notifications
+  // Track balance history
   if (!player.isDealer) {
-    console.log('[Store] Placing bet - updating balance tracker:', {
-      newBalance: player.bank,
-      action: 'loss',
-      amount: amount
-    })
     balanceTracker.updateBalance(player.bank, 'loss', amount)
   }
   
@@ -233,7 +194,7 @@ async function checkForBlackjack(hand: Hand): Promise<boolean> {
     const oldBet = hand.bet
     hand.bet *= 3
     
-    // Track blackjack for balance notifications
+    // Track blackjack winnings in balance history
     if (!state.activePlayer?.isDealer) {
       const winnings = hand.bet - oldBet
       balanceTracker.updateBalance(state.players[0].bank + hand.bet, 'blackjack', winnings)
@@ -293,7 +254,7 @@ async function checkForBust(hand: Hand): Promise<boolean> {
     hand.result = 'bust'
     if (!state.activePlayer?.isDealer) {
       playSound(Sounds.Bust)
-      // Track bust for balance notifications
+      // Track bust in balance history
       balanceTracker.updateBalance(state.players[0].bank, 'bust', 0)
     }
     endHand()
@@ -431,7 +392,7 @@ async function collectWinnings() {
         action = 'loss'
       }
       
-      // Track balance change for notifications
+      // Track balance change
       balanceTracker.updateBalance(player.bank, action, total - (oldBank === player.bank ? 0 : oldBank))
     }
     

@@ -5,7 +5,6 @@ namespace: blackjack-ai-demo
 
 resources:
   - llama-stack
-  - mcp-servers/ntfy
   - ui
 
 # Generate a secret for AI credentials

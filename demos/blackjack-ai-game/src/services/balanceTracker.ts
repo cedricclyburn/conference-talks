@@ -1,4 +1,3 @@
-import type { BalanceNotificationContext } from './notificationTool'
 
 export interface BalanceEvent {
   oldBalance: number
@@ -20,11 +19,9 @@ export type BalanceEventListener = (event: BalanceEvent) => void
 class BalanceTracker {
   private currentBalance = 0
   private previousBalance = 0
-  private lastNotificationTime = 0
   private listeners: BalanceEventListener[] = []
   private eventHistory: BalanceEvent[] = []
   private readonly SIGNIFICANT_CHANGE_THRESHOLD = 5
-  private readonly NOTIFICATION_COOLDOWN = 0 // No cooldown for demo
 
   constructor() {
     this.reset(20) // Default starting balance
@@ -36,7 +33,6 @@ class BalanceTracker {
   reset(initialBalance: number) {
     this.currentBalance = initialBalance
     this.previousBalance = initialBalance
-    this.lastNotificationTime = 0
     this.eventHistory = []
   }
 
@@ -91,60 +87,8 @@ class BalanceTracker {
   /**
    * Check if we should notify for this event
    */
-  shouldNotifyForEvent(event: BalanceEvent): boolean {
-    const now = Date.now()
-    
-    console.log('[BalanceTracker] shouldNotifyForEvent called with:', {
-      event,
-      cooldownRemaining: Math.max(0, this.NOTIFICATION_COOLDOWN - (now - this.lastNotificationTime)),
-      changeAmount: Math.abs(event.change),
-      significantThreshold: this.SIGNIFICANT_CHANGE_THRESHOLD
-    })
-    
-    // Check cooldown
-    if (now - this.lastNotificationTime < this.NOTIFICATION_COOLDOWN) {
-      console.log('[BalanceTracker] Notification blocked by cooldown')
-      return false
-    }
-
-    // Always notify for special events
-    if (event.action === 'blackjack' || event.action === 'bust') {
-      console.log('[BalanceTracker] Special event notification approved:', event.action)
-      this.lastNotificationTime = now
-      return true
-    }
-
-    // Notify for ANY balance change in demo mode
-    if (event.change !== 0) {
-      console.log('[BalanceTracker] Balance change notification approved:', event.change)
-      this.lastNotificationTime = now
-      return true
-    }
-
-    // Notify for low balance warnings
-    if (event.newBalance <= 5 && event.oldBalance > 5) {
-      console.log('[BalanceTracker] Low balance warning notification approved')
-      this.lastNotificationTime = now
-      return true
-    }
-
-    console.log('[BalanceTracker] No notification criteria met')
+  shouldNotifyForEvent(_event: BalanceEvent): boolean {
     return false
-  }
-
-  /**
-   * Create notification context from current state
-   */
-  createBalanceNotificationContext(sessionContext: SessionContext): BalanceNotificationContext {
-    const lastEvent = this.eventHistory[this.eventHistory.length - 1]
-    
-    return {
-      currentBalance: this.currentBalance,
-      previousBalance: this.previousBalance,
-      lastAction: lastEvent?.action || 'game_start',
-      winAmount: lastEvent?.winAmount,
-      sessionStats: sessionContext
-    }
   }
 
   /**

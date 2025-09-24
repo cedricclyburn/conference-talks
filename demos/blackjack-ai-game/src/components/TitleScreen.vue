@@ -18,8 +18,8 @@ function startGame() {
         <use href="#flourish" />
       </svg>
       <div>
-        <h1>Blackjack</h1>
-        <p>AI-Enhanced Game</p>
+        <h1>Blackjack (with AI!)</h1>
+        <p>Red Hat Developer Advocates</p>
       </div>
       <transition name="fade" mode="out-in">
         <div class="progress-container" v-if="state.soundLoadProgress < 100">

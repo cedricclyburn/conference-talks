@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackjack-frontend
+  namespace: blackjack-demo
+  labels:
+    app: blackjack-frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: blackjack-frontend
+  template:
+    metadata:
+      labels:
+        app: blackjack-frontend
+    spec:
+      containers:
+      - name: blackjack-frontend
+        image: image-registry.openshift-image-registry.svc:5000/blackjack-ai-demo/blackjack-frontend:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: blackjack-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      imagePullSecrets:
+      - name: default-dockercfg
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackjack-frontend-service
+  namespace: blackjack-demo
+  labels:
+    app: blackjack-frontend
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: blackjack-frontend
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: blackjack-demo-ui
+  namespace: blackjack-demo
+  labels:
+    app: blackjack-frontend
+spec:
+  to:
+    kind: Service
+    name: blackjack-frontend-service
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+
+
+
+
+

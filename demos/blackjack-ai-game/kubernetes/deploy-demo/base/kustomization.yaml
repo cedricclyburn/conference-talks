@@ -3,7 +3,6 @@ kind: Kustomization
 
 resources:
   - ../../llama-stack
-  - ../../mcp-servers/ntfy
   - ../../ui
 
 namespace: blackjack-demo

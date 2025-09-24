@@ -11,9 +11,7 @@ data:
   VITE_SHOW_PERFORMANCE_MONITOR: "true"
   VITE_SESSION_TIMEOUT: "3600000"
   VITE_MAX_CONCURRENT_SESSIONS: "150"
-  VITE_ENABLE_BALANCE_NOTIFICATIONS: "true"
-  VITE_NTFY_SERVER: "https://ntfy.sh"
-  VITE_NTFY_TOPIC: "blackjack-ai-balance-notifications"
+  VITE_ENABLE_BALANCE_NOTIFICATIONS: "false"
 ---
 apiVersion: v1
 kind: Secret
@@ -48,7 +46,7 @@ data:
       - provider_id: mistral-remote
         provider_type: remote::vllm
         config:
-          url: ${env.MISTRAL_URL:=https://mistral-small-24b-w8a8-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1}
+          url: ${env.MISTRAL_URL:=https://mistral-small-24b-w8a8-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com}
           max_tokens: 4096
           api_token: ${env.MISTRAL_API_TOKEN:=62fd2860ea715b8dfed124b80dd31715}
           tls_verify: true
@@ -211,55 +209,6 @@ spec:
   type: ClusterIP
 ---
 apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ntfy-mcp-deployment
-  namespace: blackjack-demo
-  labels:
-    app: ntfy-mcp
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ntfy-mcp
-  template:
-    metadata:
-      labels:
-        app: ntfy-mcp
-    spec:
-      containers:
-      - name: ntfy-mcp
-        image: quay.io/redhat-et/mcp-server-ntfy:latest
-        ports:
-        - containerPort: 8000
-          protocol: TCP
-        env:
-        - name: NTFY_SERVER_URL
-          value: "https://ntfy.sh"
-        imagePullPolicy: Always
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ntfy-mcp-service
-  namespace: blackjack-demo
-  labels:
-    app: ntfy-mcp
-spec:
-  ports:
-  - port: 8000
-    protocol: TCP
-    targetPort: 8000
-  selector:
-    app: ntfy-mcp
-  type: ClusterIP
 ---
 apiVersion: v1
 kind: BuildConfig

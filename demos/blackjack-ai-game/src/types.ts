@@ -1,6 +1,6 @@
 import { CardSuits, CardValue } from '@/cards'
 import type { AIRecommendation, ModelConfig, PerformanceMetrics } from './services/aiService'
-import type { QuirkyMessage } from './services/notificationTool'
+import type { BalanceEvent } from './services/balanceTracker'
 
 export type CardSuit = (typeof CardSuits)[number]
 export type CardRank = keyof typeof CardValue
@@ -53,12 +53,8 @@ export type GameState = {
   currentAiModel: ModelConfig | null
   /** Whether to show the performance overlay */
   showPerformanceOverlay: boolean
-  /** Balance notification state */
-  balanceNotificationsEnabled: boolean
-  /** Recent balance notification messages */
-  recentBalanceMessages: QuirkyMessage[]
-  /** Whether currently sending a balance notification */
-  isSendingBalanceNotification: boolean
+  /** Recent balance events for analytics */
+  balanceHistory: BalanceEvent[]
 }
 
 export class Hand {
