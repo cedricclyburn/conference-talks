@@ -1,2 +1,0 @@
-# MCP on LLAMA-STACK
-

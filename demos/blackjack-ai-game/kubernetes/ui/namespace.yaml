@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: blackjack-demo
-  labels:
-    name: blackjack-demo
-    purpose: ai-model-comparison-demo

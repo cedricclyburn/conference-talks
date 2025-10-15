@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at 50% 0%, rgba(120, 220, 255, 0.2), transparent 45%),
+              linear-gradient(180deg, #001829 0%, #0b335f 45%, #d8a03d 100%);
+  color: #fff;
+}
+
+.theme-bg {
+  background: linear-gradient(180deg, #002f4b 0%, #005377 50%, #f4d35e 100%);
+}
+
+.stockholm-skyline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent);
+  mask-image: linear-gradient(to top, black 60%, transparent);
+}
+
+.aurora {
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 140%;
+  height: 60%;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.4), transparent 55%),
+              radial-gradient(circle at 80% 30%, rgba(120, 220, 255, 0.35), transparent 60%),
+              radial-gradient(circle at 50% 10%, rgba(180, 255, 210, 0.3), transparent 65%);
+  filter: blur(12px);
+  opacity: 0.8;
+}
+
+.floating-islands {
+  position: absolute;
+  bottom: 30%;
+  left: -5%;
+  right: -5%;
+  height: 20%;
+  background: repeating-linear-gradient(120deg, rgba(244, 211, 94, 0.2), rgba(244, 211, 94, 0.2) 10px, transparent 10px, transparent 20px);
+  opacity: 0.4;
+}
+
+.noise-text {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+
