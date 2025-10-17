@@ -5,7 +5,7 @@ css: unocss
 colorSchema: dark
 transition: fade-out
 title: I’ve Got 99 Problems, but LLMs Ain’t One!
-exportFilename: Ai4 2025 - 99 Problems but LLMs Ain't One
+exportFilename: Red Hat Summit Connect 2025 - 99 Problems but LLMs Ain't One
 lineNumbers: false
 mdc: true
 clicks: 0
@@ -19,18 +19,6 @@ routerMode: hash
 
 Cedric Clyburn · Senior Developer Advocate, Red Hat
 
-</div>
-
-<div w-full absolute bottom-0 left-0 flex items-center transform="translate-y--6">
-  <div w-full flex items-center justify-between gap-4 px-5>
-    <div text-sm opacity-70>
-      Ai4 Las Vegas · 2025
-  </div>
-    <div flex items-center gap-4>
-      <img w-28 h-10 src="./img/AI4-Logo.png" alt="Ai4 Logo" object-contain opacity-90 />
-      <img w-10 h-10 src="./img/Cedric_Clyburn_Headshot.jpg" alt="Cedric Clyburn headshot" rounded-full object-cover />
-    </div>
-  </div>
 </div>
 
 ---
@@ -539,7 +527,7 @@ class: py-10
 
 <div w-full absolute bottom-0 left-0 flex items-center transform="translate-x--10 translate-y--10">
   <div w-full flex items-center justify-end gap-4>
-    <img w-28 h-10 src="./img/AI4-Logo.png" alt="Ai4 Logo" object-contain opacity-90 />
+    <img w-28 h-10 src="./img/RedHat-Logo.png" alt="Red Hat Logo" object-contain opacity-90 />
   </div>
 </div>
 
